@@ -45,7 +45,7 @@ on:
 jobs:
 
   build:
-    environment: production
+    environment: gha
 
     strategy:
       fail-fast: false
