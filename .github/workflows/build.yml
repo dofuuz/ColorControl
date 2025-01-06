@@ -81,7 +81,7 @@ jobs:
       run: nuget restore ColorControl.sln
 
     - name: Build Solution
-      run: msbuild.exe ColorControl.sln /p:platform=x64 /p:configuration="${{ matrix.build_type }}"
+      run: msbuild.exe ColorControl.sln /p:configuration="${{ matrix.configuration }}"
 
     # Create the app package by building and packaging the Windows Application Packaging project
     - name: Create the app package
@@ -107,4 +107,4 @@ jobs:
       if: ${{ !cancelled() }}
       with:
         name: artifact
-        path: ColorControl/bin/${{ matrix.build_type }}
+        path: ColorControl/bin/${{ matrix.configuration }}
