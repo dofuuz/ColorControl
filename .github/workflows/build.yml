@@ -45,6 +45,7 @@ on:
 jobs:
 
   build:
+    environment: production
 
     strategy:
       fail-fast: false
@@ -76,25 +77,33 @@ jobs:
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v2
 
+    # Decode the Base64 encoded Pfx
+    - name: Decode the Pfx
+      run: |
+        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
+        $currentDirectory = Get-Location
+        $certificatePath = Join-Path -Path $currentDirectory -ChildPath ColorControl -AdditionalChildPath ColorControl_TemporaryKey.pfx
+        [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
+
     # https://gist.github.com/CalvinAllen/701695399e5966845a206954820c329e
     - name: Restore Packages
       run: nuget restore ColorControl.sln
 
     - name: Build Solution
-      run: msbuild.exe ColorControl.sln /p:configuration="${{ matrix.configuration }}"
+      run: msbuild.exe ColorControl.sln /p:platform=x64 /p:configuration="${{ matrix.configuration }}"
 
-    # Create the app package by building and packaging the Windows Application Packaging project
-    - name: Create the app package
-      run: msbuild $env:Wap_Project_Path /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:Appx_Package_Build_Mode /p:AppxBundle=$env:Appx_Bundle /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
-      env:
-        Appx_Bundle: Always
-        Appx_Bundle_Platforms: x86|x64
-        Appx_Package_Build_Mode: StoreUpload
-        Configuration: ${{ matrix.configuration }}
+    # # Create the app package by building and packaging the Windows Application Packaging project
+    # - name: Create the app package
+    #   run: msbuild $env:Wap_Project_Path /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:Appx_Package_Build_Mode /p:AppxBundle=$env:Appx_Bundle /p:PackageCertificateKeyFile=GitHubActionsWorkflow.pfx /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
+    #   env:
+    #     Appx_Bundle: Always
+    #     Appx_Bundle_Platforms: x86|x64
+    #     Appx_Package_Build_Mode: StoreUpload
+    #     Configuration: ${{ matrix.configuration }}
 
     # Remove the pfx
     - name: Remove the pfx
-      run: Remove-Item -path $env:Wap_Project_Directory\GitHubActionsWorkflow.pfx
+      run: Remove-Item -path ColorControl\ColorControl_TemporaryKey.pfx
 
     # Upload the MSIX package: https://github.com/marketplace/actions/upload-a-build-artifact
     - name: Upload build artifacts
